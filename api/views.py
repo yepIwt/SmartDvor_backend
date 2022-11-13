@@ -22,7 +22,7 @@ class RegisterView(APIView):
 
 
 class LoginView(APIView):
-    def post(self, request):
+    def post(self, request) -> Response:
         if not request.data.get("username") or not request.data.get("password"):
             raise AuthenticationFailed({
                 "username": "username",
@@ -53,5 +53,16 @@ class LoginView(APIView):
         response.set_cookie(key = "jwt", value = token, httponly = True)
         response.data = {
             "jwt": token
+        }
+        return response
+
+
+class LogoutView(APIView):
+    def post(self, request):
+        response = Response()
+
+        response.delete_cookie("jwt")
+        response.data = {
+            "message": "success"
         }
         return response
