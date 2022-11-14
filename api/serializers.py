@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from api.models import User, Post, PostComment
+from api.models import User, Post, PostComment, Service
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -32,6 +32,16 @@ class PostCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostComment
         fields = ["post", "comment_text", "comment_author", "pub_date"]
+
+    def create(self, validated_data):
+        instance = self.Meta.model(**validated_data)
+        instance.save()
+        return instance
+
+class ServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Service
+        fields = ["customer", "service_type", "customer_comment", "pub_date", "status", "status_comment"]
 
     def create(self, validated_data):
         instance = self.Meta.model(**validated_data)

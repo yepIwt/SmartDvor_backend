@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed, ValidationError
 
 from . import serializers
-from api.models import User, Post
+from api.models import User, Post, Service
 # Create your views here. Okay.
 
 
@@ -208,4 +208,62 @@ class PostCommentLeaveView(APIView):
         serializer = serializers.PostCommentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        return Response(serializer.data)
+
+
+class ServiceListView(APIView):  # TODO: Only superuser can view this
+    def get(self, request):
+
+        token = request.COOKIES.get("jwt")
+
+        if not token:
+            raise AuthenticationFailed("Unauthenticated!")
+
+        try:
+            payload = jwt.decode(token, "secret", algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Unauthenticated!")
+
+        people_requests = Service.objects.all()
+        serializer = serializers.ServiceSerializer(people_requests, many = True)
+        return Response(serializer.data)
+
+class ServiceRequestView(APIView):
+    def post(self, request):
+
+        token = request.COOKIES.get("jwt")
+
+        if not token:
+            raise AuthenticationFailed("Unauthenticated!")
+
+        try:
+            payload = jwt.decode(token, "secret", algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Unauthenticated!")
+
+        request.data._mutable = True
+        request.data.setdefault("customer", payload["id"])
+
+        serializer = serializers.ServiceSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class ServiceCustomerListView(APIView):
+    def get(self, request):
+
+        token = request.COOKIES.get("jwt")
+
+        if not token:
+            raise AuthenticationFailed("Unauthenticated!")
+
+        try:
+            payload = jwt.decode(token, "secret", algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Unauthenticated!")
+
+        customer = User.objects.get(id = payload["id"])
+        requests = customer.service_set.order_by('-id')
+        serializer = serializers.ServiceSerializer(requests, many=True)
         return Response(serializer.data)

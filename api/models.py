@@ -38,3 +38,16 @@ class PostComment(models.Model):
 
     def __str__(self):
         return f"{self.comment_author.username}: {self.post.post_title} - {self.comment_text}"
+
+
+class Service(models.Model):
+    customer = models.ForeignKey(User, on_delete = models.CASCADE)
+    service_type = models.CharField("Название услуги", max_length = 50)
+    customer_comment = models.CharField("Комментарий к услуге", max_length = 50)
+    pub_date = models.DateTimeField("Дата и время запроса", default = datetime.datetime.today)
+
+    status = models.BooleanField("Статус заявки", default = False)  # True == Выполнена;
+    status_comment = models.CharField("Комментарий к статусу", max_length = 50, default = "Отправлена")
+
+    def __str__(self):
+        return f"{self.cutomer.username}: {self.service_type} - {self.customer_comment}"

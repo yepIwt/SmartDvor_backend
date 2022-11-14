@@ -15,4 +15,7 @@ urlpatterns = [
     path('posts/create', views.PostCreateView.as_view()),
     path('comments', views.PostCommentListView.as_view()),
     path('comments/leave', views.PostCommentLeaveView.as_view()),
+    path('requests', views.ServiceListView.as_view()),
+    path('requests/create', views.ServiceRequestView.as_view()),
+    path('requests/my', views.ServiceCustomerListView.as_view()),
 ]
