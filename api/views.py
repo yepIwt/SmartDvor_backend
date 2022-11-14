@@ -1,11 +1,13 @@
 import datetime
 import jwt
+import rest_framework.exceptions
 from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
+
 from . import serializers
-from api.models import User
+from api.models import User, Post
 # Create your views here. Okay.
 
 
@@ -85,7 +87,29 @@ class UserView(APIView):
         return Response(serializer.data)
 
 
-class UsersView(APIView):
+class UserGetView(APIView):
+    def get(self, request):
+
+        token = request.COOKIES.get("jwt")
+
+        if not token:
+            raise AuthenticationFailed("Unauthenticated!")
+
+        try:
+            payload = jwt.decode(token, "secret", algorithms = ["HS256"])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Unauthenticated!")
+
+        if not request.data.get("id"):
+            return Response(
+                {"id": "required"}
+            )
+
+        user = User.objects.get(id = request.data["id"])
+        serializer = serializers.UserSerializer(user)
+        return Response(serializer.data)
+
+class UserListView(APIView):
     def get(self, request):
 
         token = request.COOKIES.get("jwt")
@@ -100,4 +124,41 @@ class UsersView(APIView):
 
         users = User.objects.all()
         serializer = serializers.UserSerializer(users, many=True)  # TODO: restrict access to personal data
+        return Response(serializer.data)
+
+class PostListView(APIView):
+    def get(self, request):
+
+        token = request.COOKIES.get("jwt")
+
+        if not token:
+            raise AuthenticationFailed("Unauthenticated!")
+
+        try:
+            payload = jwt.decode(token, "secret", algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Unauthenticated!")
+
+        posts = Post.objects.all()
+        serializer = serializers.PostSerializer(posts, many=True)
+        return Response(serializer.data)
+
+class PostCreateView(APIView):
+    def post(self, request) -> Response:
+        token = request.COOKIES.get("jwt")
+
+        if not token:
+            raise AuthenticationFailed("Unauthenticated!")
+
+        try:
+            payload = jwt.decode(token, "secret", algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Unauthenticated!")
+
+        request.data._mutable = True
+        request.data.setdefault("post_author", payload["id"])
+
+        serializer = serializers.PostSerializer(data = request.data)
+        serializer.is_valid(raise_exception = True)
+        serializer.save()
         return Response(serializer.data)
