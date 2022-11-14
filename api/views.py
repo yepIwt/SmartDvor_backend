@@ -4,7 +4,7 @@ import rest_framework.exceptions
 from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.exceptions import AuthenticationFailed, ValidationError
 
 from . import serializers
 from api.models import User, Post
@@ -44,7 +44,7 @@ class LoginView(APIView):
 
         payload = {
             "id": user.id,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes = 60),
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(days = 60),
             "iat": datetime.datetime.utcnow()
         }
 
@@ -160,5 +160,52 @@ class PostCreateView(APIView):
 
         serializer = serializers.PostSerializer(data = request.data)
         serializer.is_valid(raise_exception = True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class PostCommentListView(APIView):
+    def get(self, request):
+
+        token = request.COOKIES.get("jwt")
+
+        if not token:
+            raise AuthenticationFailed("Unauthenticated!")
+
+        try:
+            payload = jwt.decode(token, "secret", algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Unauthenticated!")
+
+        if not request.data.get("post_id"):
+            raise ValidationError("'post_id' required")
+
+        post = Post.objects.get(id = request.data["post_id"])  # TODO: index out of the range!
+
+        comments = post.postcomment_set.order_by('-id')
+        serializer = serializers.PostCommentSerializer(comments, many = True)
+        return Response(serializer.data)
+
+class PostCommentLeaveView(APIView):
+    def post(self, request):
+        token = request.COOKIES.get("jwt")
+
+        if not token:
+            raise AuthenticationFailed("Unauthenticated!")
+
+        try:
+            payload = jwt.decode(token, "secret", algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Unauthenticated!")
+
+        if not request.data.get("post_id"):
+            return Response({"post_id" : "required"})
+
+        request.data._mutable = True
+        request.data.setdefault("comment_author", payload["id"])
+        request.data.setdefault("post", request.data["post_id"])  # TODO: index out of the range!
+
+        serializer = serializers.PostCommentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)

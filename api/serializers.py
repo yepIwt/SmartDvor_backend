@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from api.models import User, Post
+from api.models import User, Post, PostComment
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,6 +22,16 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = ['post_title', 'post_text', 'pub_date', 'post_author']
+
+    def create(self, validated_data):
+        instance = self.Meta.model(**validated_data)
+        instance.save()
+        return instance
+
+class PostCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostComment
+        fields = ["post", "comment_text", "comment_author", "pub_date"]
 
     def create(self, validated_data):
         instance = self.Meta.model(**validated_data)

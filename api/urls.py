@@ -13,4 +13,6 @@ urlpatterns = [
     path('users', views.UserListView.as_view()),
     path('posts', views.PostListView.as_view()),
     path('posts/create', views.PostCreateView.as_view()),
+    path('comments', views.PostCommentListView.as_view()),
+    path('comments/leave', views.PostCommentLeaveView.as_view()),
 ]
